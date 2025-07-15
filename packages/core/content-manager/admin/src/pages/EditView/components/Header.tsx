@@ -19,7 +19,7 @@ import {
 } from '@strapi/design-system';
 import { ListPlus, Pencil, Trash, WarningCircle } from '@strapi/icons';
 import { useIntl } from 'react-intl';
-import { useMatch, useNavigate } from 'react-router-dom';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
 import { RelativeTime } from '../../../components/RelativeTime';
 import {
@@ -30,7 +30,7 @@ import {
   UPDATED_AT_ATTRIBUTE_NAME,
   UPDATED_BY_ATTRIBUTE_NAME,
 } from '../../../constants/attributes';
-import { SINGLE_TYPES } from '../../../constants/collections';
+import { COLLECTION_TYPES, SINGLE_TYPES } from '../../../constants/collections';
 import { useDocumentRBAC } from '../../../features/DocumentRBAC';
 import { useDoc } from '../../../hooks/useDocument';
 import { useDocumentActions } from '../../../hooks/useDocumentActions';
@@ -55,6 +55,7 @@ interface HeaderProps {
 const Header = ({ isCreating, status, title: documentTitle = 'Untitled' }: HeaderProps) => {
   const { formatMessage } = useIntl();
   const isCloning = useMatch(CLONE_PATH) !== null;
+  const params = useParams<{ collectionType: string; slug: string }>();
 
   const title = isCreating
     ? formatMessage({
@@ -65,7 +66,13 @@ const Header = ({ isCreating, status, title: documentTitle = 'Untitled' }: Heade
 
   return (
     <Flex direction="column" alignItems="flex-start" paddingTop={6} paddingBottom={4} gap={2}>
-      <BackButton />
+      <BackButton
+        fallback={
+          params.collectionType === SINGLE_TYPES
+            ? undefined
+            : `../${COLLECTION_TYPES}/${params.slug}`
+        }
+      />
       <Flex width="100%" justifyContent="space-between" gap="80px" alignItems="flex-start">
         <Typography variant="alpha" tag="h1">
           {title}
@@ -160,7 +167,7 @@ const HeaderToolbar = () => {
         }}
         descriptions={(
           plugins['content-manager'].apis as ContentManagerPlugin['config']['apis']
-        ).getDocumentActions()}
+        ).getDocumentActions('header')}
       >
         {(actions) => {
           const headerActions = actions.filter((action) => {
@@ -463,6 +470,7 @@ const ConfigureTheViewAction: DocumentActionComponent = ({ collectionType, model
 };
 
 ConfigureTheViewAction.type = 'configure-the-view';
+ConfigureTheViewAction.position = 'header';
 
 const EditTheModelAction: DocumentActionComponent = ({ model }) => {
   const navigate = useNavigate();
@@ -482,13 +490,14 @@ const EditTheModelAction: DocumentActionComponent = ({ model }) => {
 };
 
 EditTheModelAction.type = 'edit-the-model';
+EditTheModelAction.position = 'header';
 
 const DeleteAction: DocumentActionComponent = ({ documentId, model, collectionType, document }) => {
   const navigate = useNavigate();
   const { formatMessage } = useIntl();
   const listViewPathMatch = useMatch(LIST_PATH);
   const canDelete = useDocumentRBAC('DeleteAction', (state) => state.canDelete);
-  const { delete: deleteAction } = useDocumentActions();
+  const { delete: deleteAction, isLoading } = useDocumentActions();
   const { toggleNotification } = useNotification();
   const setSubmitting = useForm('DeleteAction', (state) => state.setSubmitting);
   const isLocalized = document?.locale != null;
@@ -520,6 +529,7 @@ const DeleteAction: DocumentActionComponent = ({ documentId, model, collectionTy
           </Typography>
         </Flex>
       ),
+      loading: isLoading,
       onConfirm: async () => {
         /**
          * If we have a match, we're in the list view
@@ -571,6 +581,7 @@ const DeleteAction: DocumentActionComponent = ({ documentId, model, collectionTy
 };
 
 DeleteAction.type = 'delete';
+DeleteAction.position = ['header', 'table-row'];
 
 const DEFAULT_HEADER_ACTIONS = [EditTheModelAction, ConfigureTheViewAction, DeleteAction];
 

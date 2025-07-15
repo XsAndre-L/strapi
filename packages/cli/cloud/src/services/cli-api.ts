@@ -7,12 +7,12 @@ import { getLocalConfig } from '../config/local';
 
 import packageJson from '../../package.json';
 
-export const VERSION = 'v1';
+export const VERSION = 'v2';
 
-export type ProjectInfos = {
+export type ProjectInfo = {
   id: string;
   name: string;
-  selectedEnvironment?: string;
+  targetEnvironment?: string;
   displayName?: string;
   nodeVersion?: string;
   region?: string;
@@ -22,7 +22,13 @@ export type ProjectInfos = {
 
 export type EnvironmentInfo = Record<string, unknown>;
 
-export type ProjectInput = Omit<ProjectInfos, 'id'>;
+export type EnvironmentDetails = {
+  name: string;
+  hasLiveDeployment: boolean;
+  hasPendingDeployment: boolean;
+};
+
+export type ProjectInput = Omit<ProjectInfo, 'id'>;
 
 export type DeployResponse = {
   build_id: string;
@@ -43,16 +49,24 @@ export type ListEnvironmentsResponse = {
 
 export type ListLinkProjectsResponse = {
   data: {
-    data: ProjectInfos[] | Record<string, never>;
+    data: ProjectInfo[] | Record<string, never>;
+  };
+};
+
+export type ListLinkEnvironmentsResponse = {
+  data: {
+    data: EnvironmentDetails[] | Record<string, never>;
   };
 };
 
 export type GetProjectResponse = {
   data: {
+    displayName: string;
     updatedAt: string;
     suspendedAt?: string;
     isTrial: boolean;
     environments: string[];
+    environmentsDetails: EnvironmentDetails[];
   };
   metadata: {
     dashboardUrls: {
@@ -60,6 +74,10 @@ export type GetProjectResponse = {
       deployments: string;
     };
   };
+};
+
+export type CreateTrialResponse = {
+  licenseKey: string;
 };
 
 export interface CloudApiService {
@@ -90,7 +108,15 @@ export interface CloudApiService {
 
   listEnvironments(project: { name: string }): Promise<AxiosResponse<ListEnvironmentsResponse>>;
 
+  listLinkEnvironments(project: {
+    name: string;
+  }): Promise<AxiosResponse<ListLinkEnvironmentsResponse>>;
+
   getProject(project: { name: string }): Promise<AxiosResponse<GetProjectResponse>>;
+
+  createTrial(createTrialInput: {
+    strapiVersion: string;
+  }): Promise<AxiosResponse<CreateTrialResponse>>;
 
   track(event: string, payload?: TrackPayload): Promise<AxiosResponse<void>>;
 }
@@ -101,7 +127,7 @@ export async function cloudApiFactory(
 ): Promise<CloudApiService> {
   const localConfig = await getLocalConfig();
   const customHeaders = {
-    'x-device-id': localConfig.deviceId,
+    'x-device-id': localConfig.installId,
     'x-app-version': packageJson.version,
     'x-os-name': os.type(),
     'x-os-version': os.version(),
@@ -226,6 +252,23 @@ export async function cloudApiFactory(
       }
     },
 
+    async listLinkEnvironments({ name }): Promise<AxiosResponse<ListLinkEnvironmentsResponse>> {
+      try {
+        const response = await axiosCloudAPI.get(`/projects/${name}/environments-linkable`);
+
+        if (response.status !== 200) {
+          throw new Error('Error fetching cloud environments from the server.');
+        }
+
+        return response;
+      } catch (error) {
+        logger.debug(
+          "🥲 Oops! Couldn't retrieve your project's environments from the server. Please try again."
+        );
+        throw error;
+      }
+    },
+
     async getProject({ name }): Promise<AxiosResponse<GetProjectResponse>> {
       try {
         const response = await axiosCloudAPI.get(`/projects/${name}`);
@@ -239,6 +282,21 @@ export async function cloudApiFactory(
         logger.debug(
           "🥲 Oops! There was a problem retrieving your project's details. Please try again."
         );
+        throw error;
+      }
+    },
+
+    async createTrial({ strapiVersion }): Promise<AxiosResponse<CreateTrialResponse>> {
+      try {
+        const response = await axiosCloudAPI.post(`/cms-trial-request`, { strapiVersion });
+
+        if (response.status !== 200) {
+          throw new Error('Error creating trial.');
+        }
+
+        return response;
+      } catch (error) {
+        logger.debug('🥲 Oops! There was a problem creating your trial. Please try again.');
         throw error;
       }
     },

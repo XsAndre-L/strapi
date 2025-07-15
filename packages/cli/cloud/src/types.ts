@@ -21,16 +21,26 @@ export type CloudCliConfig = {
     questions: ReadonlyArray<DistinctQuestion<ProjectAnswers>>;
     defaults: Partial<ProjectAnswers>;
     introText: string;
+    userChoice?: object;
+    reference?: string;
+  };
+  projectDeployment: {
+    confirmationText: string;
   };
   buildLogsConnectionTimeout: string;
   buildLogsMaxRetries: string;
   notificationsConnectionTimeout: string;
   maxProjectFileSize: string;
+  featureFlags: {
+    cloudLoginPromptEnabled: boolean;
+    growthSsoTrialEnabled: boolean;
+  };
 };
 
 export interface CLIContext {
   cwd: string;
   logger: Logger;
+  promptExperiment?: string;
 }
 
 export type StrapiCloudCommand = (params: {
@@ -47,7 +57,7 @@ export type StrapiCloudCommandInfo = {
   name: string;
   description: string;
   command: StrapiCloudCommand;
-  action: (ctx: CLIContext) => Promise<unknown>;
+  action: (ctx: CLIContext, options?: Record<string, unknown>) => Promise<unknown>;
 };
 
 export type TrackPayload = Record<string, unknown>;

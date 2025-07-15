@@ -314,8 +314,8 @@ exports[`<EditAssetDialog /> renders and matches the snapshot 1`] = `
   padding-block: 8px;
 }
 
-.c35 ::placeholder {
-  color: #8e8ea9;
+.c35::placeholder {
+  color: #666687;
   opacity: 1;
 }
 
@@ -354,7 +354,6 @@ exports[`<EditAssetDialog /> renders and matches the snapshot 1`] = `
 
 .c14 {
   min-width: 100%;
-  padding-inline: 4px;
 }
 
 .c3 {
@@ -362,6 +361,7 @@ exports[`<EditAssetDialog /> renders and matches the snapshot 1`] = `
   position: fixed;
   inset: 0;
   z-index: 300;
+  will-change: opacity;
 }
 
 .c4 {
@@ -383,16 +383,25 @@ exports[`<EditAssetDialog /> renders and matches the snapshot 1`] = `
   z-index: 310;
 }
 
+.c4 >form {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .c7 {
   border-bottom: solid 1px #eaeaef;
 }
 
 .c13 {
-  padding-inline: 40px;
+  padding-inline: 32px;
 }
 
 .c13>div {
   padding-block: 40px;
+  margin: 0 -2px 0 -2px;
+  padding-left: 2px;
+  padding-right: 2px;
 }
 
 .c13>div>div {
@@ -453,16 +462,27 @@ exports[`<EditAssetDialog /> renders and matches the snapshot 1`] = `
 }
 
 .c24 svg {
-  font-size: 4.8rem;
-  height: 26.4rem;
+  height: 26px;
 }
 
 .c24 img,
-.c24 video {
+.c24 mux-player {
   margin: 0;
   padding: 0;
   max-height: 26.4rem;
   max-width: 100%;
+}
+
+.c24 mux-player {
+  --play-button: inline-flex;
+  --mute-button: inline-flex;
+  --pip-button: inline-flex;
+  --fullscreen-button: inline-flex;
+  --playback-rate-button: inline-flex;
+  --volume-range: inline-flex;
+  --time-range: inline-flex;
+  --time-display: inline-flex;
+  --duration-display: inline-flex;
 }
 
 .c22 {

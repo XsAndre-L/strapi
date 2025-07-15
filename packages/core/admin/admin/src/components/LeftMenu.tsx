@@ -9,12 +9,13 @@ import { styled } from 'styled-components';
 import { useAuth } from '../features/Auth';
 import { useTracking } from '../features/Tracking';
 import { Menu, MenuItem } from '../hooks/useMenu';
-import { getDisplayName } from '../utils/users';
+import { getDisplayName, getInitials } from '../utils/users';
 
 import { MainNav } from './MainNav/MainNav';
 import { NavBrand } from './MainNav/NavBrand';
 import { NavLink } from './MainNav/NavLink';
 import { NavUser } from './MainNav/NavUser';
+import { TrialCountdown } from './MainNav/TrialCountdown';
 
 const sortLinks = (links: MenuItem[]) => {
   return links.sort((a, b) => {
@@ -56,11 +57,7 @@ const LeftMenu = ({ generalSectionLinks, pluginsSectionLinks }: LeftMenuProps) =
     sensitivity: 'base',
   });
 
-  const initials = userDisplayName
-    .split(' ')
-    .map((name) => name.substring(0, 1))
-    .join('')
-    .substring(0, 2);
+  const initials = getInitials(user);
 
   const handleClickOnLink = (destination: string) => {
     trackUsage('willNavigate', { from: pathname, to: destination });
@@ -82,7 +79,7 @@ const LeftMenu = ({ generalSectionLinks, pluginsSectionLinks }: LeftMenuProps) =
           ? listLinks.map((link) => {
               const LinkIcon = link.icon;
               const badgeContentLock = link?.licenseOnly ? (
-                <Lightning fill="warning500" />
+                <Lightning fill="primary600" />
               ) : undefined;
 
               const badgeContentNumeric =
@@ -128,6 +125,7 @@ const LeftMenu = ({ generalSectionLinks, pluginsSectionLinks }: LeftMenuProps) =
             })
           : null}
       </NavListWrapper>
+      <TrialCountdown />
       <NavUser initials={initials}>{userDisplayName}</NavUser>
     </MainNav>
   );

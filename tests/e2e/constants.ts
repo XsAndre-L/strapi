@@ -12,6 +12,7 @@ export const ALLOWED_CONTENT_TYPES = [
   'api::homepage.homepage',
   'api::product.product',
   'api::shop.shop',
+  'api::match.match',
   'api::upcoming-match.upcoming-match',
   'api::unique.unique',
   'plugin::content-manager.history-version',
@@ -46,3 +47,6 @@ export const ADMIN_PASSWORD = 'Testing123!';
 
 export const EDITOR_EMAIL_ADDRESS = 'editor@testing.com';
 export const EDITOR_PASSWORD = 'Testing123!';
+
+export const AUTHOR_EMAIL_ADDRESS = 'author@testing.com';
+export const AUTHOR_PASSWORD = 'Testing123!';

@@ -226,6 +226,10 @@ exports[`Upload - Configure initial render renders and matches the snapshot 1`] 
   color: #7b79ff;
 }
 
+.c8:hover svg path {
+  fill: #7b79ff;
+}
+
 .c8:active {
   color: #271fe0;
 }
@@ -299,6 +303,7 @@ exports[`Upload - Configure initial render renders and matches the snapshot 1`] 
   flex: 1;
   font-size: 1.4rem;
   line-height: 2.2rem;
+  min-height: 2.2rem;
 }
 
 .c34 {

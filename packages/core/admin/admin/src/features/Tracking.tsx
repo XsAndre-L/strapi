@@ -45,31 +45,6 @@ const TrackingProvider = ({ children }: TrackingProviderProps) => {
   const { data } = useTelemetryPropertiesQuery(undefined, {
     skip: !initData?.uuid || !token,
   });
-
-  React.useEffect(() => {
-    if (uuid && data) {
-      const event = 'didInitializeAdministration';
-      try {
-        fetch('https://analytics.strapi.io/api/v2/track', {
-          method: 'POST',
-          body: JSON.stringify({
-            // This event is anonymous
-            event,
-            userId: '',
-            eventPropeties: {},
-            groupProperties: { ...data, projectId: uuid },
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Strapi-Event': event,
-          },
-        });
-      } catch {
-        // silence is golden
-      }
-    }
-  }, [data, uuid]);
-
   const value = React.useMemo(
     () => ({
       uuid,
@@ -95,7 +70,6 @@ const TrackingProvider = ({ children }: TrackingProviderProps) => {
 interface EventWithoutProperties {
   name:
     | 'changeComponentsOrder'
-    | 'didAccessAuthenticatedAdministration'
     | 'didAddComponentToDynamicZone'
     | 'didBulkDeleteEntries'
     | 'didNotBulkDeleteEntries'
@@ -131,7 +105,6 @@ interface EventWithoutProperties {
     | 'didNotCreateFirstAdmin'
     | 'didNotSaveComponent'
     | 'didPluginLearnMore'
-    | 'didPublishEntry'
     | 'didBulkPublishEntries'
     | 'didNotBulkPublishEntries'
     | 'didUnpublishEntry'
@@ -148,6 +121,7 @@ interface EventWithoutProperties {
     | 'didSelectContentTypeFieldSettings'
     | 'didSelectContentTypeSettings'
     | 'didEditAuthenticationProvider'
+    | 'didRestoreHistoryVersion'
     | 'hasClickedCTBAddFieldBanner'
     | 'removeComponentFromDynamicZone'
     | 'willAddMoreFieldToContentType'
@@ -171,6 +145,7 @@ interface EventWithoutProperties {
     | 'willEditEditLayout'
     | 'willEditEmailTemplates'
     | 'willEditEntryFromButton'
+    | 'willEditEntryFromHome'
     | 'willEditEntryFromList'
     | 'willEditFieldOfContentType'
     | 'willEditMediaLibraryConfig'
@@ -181,15 +156,21 @@ interface EventWithoutProperties {
     | 'willEditStage'
     | 'willFilterEntries'
     | 'willInstallPlugin'
-    | 'willPublishEntry'
     | 'willUnpublishEntry'
     | 'willSaveComponent'
     | 'willSaveContentType'
     | 'willSaveContentTypeLayout'
-    | 'willOpenPreview'
     | 'didEditFieldNameOnContentType'
     | 'didCreateRelease';
   properties?: never;
+}
+
+interface DidAccessAuthenticatedAdministrationEvent {
+  name: 'didAccessAuthenticatedAdministration';
+  properties: {
+    registeredWidgets: string[];
+    projectId: string;
+  };
 }
 
 interface DidFilterMediaLibraryElementsEvent {
@@ -316,16 +297,31 @@ interface DeleteEntryEvents {
 interface CreateEntryEvents {
   name: 'willCreateEntry' | 'didCreateEntry' | 'didNotCreateEntry';
   properties: {
+    documentId?: string;
     status?: string;
     error?: unknown;
+    fromPreview?: boolean;
+    fromRelationModal?: boolean;
+  };
+}
+
+interface PublishEntryEvents {
+  name: 'willPublishEntry' | 'didPublishEntry';
+  properties: {
+    documentId?: string;
+    fromPreview?: boolean;
+    fromRelationModal?: boolean;
   };
 }
 
 interface UpdateEntryEvents {
   name: 'willEditEntry' | 'didEditEntry' | 'didNotEditEntry';
   properties: {
+    documentId?: string;
     status?: string;
     error?: unknown;
+    fromPreview?: boolean;
+    fromRelationModal?: boolean;
   };
 }
 
@@ -345,8 +341,26 @@ interface DidPublishRelease {
   };
 }
 
+interface DidUpdateCTBSchema {
+  name: 'didUpdateCTBSchema';
+  properties: {
+    success: boolean;
+    newContentTypes: number;
+    editedContentTypes: number;
+    deletedContentTypes: number;
+    newComponents: number;
+    editedComponents: number;
+    deletedComponents: number;
+    newFields: number;
+    editedFields: number;
+    deletedFields: number;
+  };
+}
+
 type EventsWithProperties =
   | CreateEntryEvents
+  | PublishEntryEvents
+  | DidAccessAuthenticatedAdministrationEvent
   | DidAccessTokenListEvent
   | DidChangeModeEvent
   | DidCropFileEvent
@@ -364,7 +378,8 @@ type EventsWithProperties =
   | WillModifyTokenEvent
   | WillNavigateEvent
   | DidPublishRelease
-  | MediaEvents;
+  | MediaEvents
+  | DidUpdateCTBSchema;
 
 export type TrackingEvent = EventWithoutProperties | EventsWithProperties;
 export interface UseTrackingReturn {

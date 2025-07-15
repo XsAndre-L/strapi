@@ -14,35 +14,12 @@ describe('api', () => {
 
       const params = buildValidParams(queryParams);
 
-      expect(params).toMatchInlineSnapshot(`
-        {
-          "locale": "en",
-          "page": "1",
-          "pageSize": "10",
-          "sort": "name:ASC",
-        }
-      `);
-    });
-
-    it('should encode a search query', () => {
-      const _q = `test query`;
-      const queryParams = {
+      expect(params).toEqual({
+        locale: 'en',
         page: '1',
         pageSize: '10',
         sort: 'name:ASC',
-        _q,
-      };
-
-      const params = buildValidParams(queryParams);
-
-      expect(params).toMatchInlineSnapshot(`
-        {
-          "_q": "test%20query",
-          "page": "1",
-          "pageSize": "10",
-          "sort": "name:ASC",
-        }
-      `);
+      });
     });
   });
 });

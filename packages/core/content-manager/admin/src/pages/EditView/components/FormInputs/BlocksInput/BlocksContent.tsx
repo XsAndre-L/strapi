@@ -19,6 +19,7 @@ import { ItemTypes } from '../../../../../constants/dragAndDrop';
 import { useDragAndDrop, DIRECTIONS } from '../../../../../hooks/useDragAndDrop';
 import { getTranslation } from '../../../../../utils/translations';
 
+import { decorateCode } from './Blocks/Code';
 import { type BlocksStore, useBlocksEditorContext } from './BlocksEditor';
 import { useConversionModal } from './BlocksToolbar';
 import { type ModifiersStore } from './Modifiers';
@@ -84,30 +85,32 @@ const DragIconButton = styled<IconButtonComponent<'div'>>(IconButton)<{
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
   border-radius: ${({ theme }) => theme.borderRadius};
-  width: ${({ theme }) => theme.spaces[4]};
-  height: ${({ theme }) => theme.spaces[6]};
+  padding-left: ${({ theme }) => theme.spaces[0]};
+  padding-right: ${({ theme }) => theme.spaces[0]};
+  padding-top: ${({ theme }) => theme.spaces[1]};
+  padding-bottom: ${({ theme }) => theme.spaces[1]};
   visibility: hidden;
   cursor: grab;
   opacity: inherit;
   margin-top: ${(props) => props.$dragHandleTopMargin ?? 0};
 
   &:hover {
-    background: ${({ theme }) => theme.colors.neutral200};
+    background: ${({ theme }) => theme.colors.neutral100};
   }
   &:active {
     cursor: grabbing;
+    background: ${({ theme }) => theme.colors.neutral150};
   }
   &[aria-disabled='true'] {
-    cursor: not-allowed;
-    background: transparent;
+    visibility: hidden;
   }
   svg {
-    height: auto;
     min-width: ${({ theme }) => theme.spaces[3]};
 
     path {
-      fill: ${({ theme }) => theme.colors.neutral700};
+      fill: ${({ theme }) => theme.colors.neutral500};
     }
   }
 `;
@@ -287,7 +290,11 @@ const CloneDragItem = ({ children, dragHandleTopMargin }: CloneDragItemProps) =>
   );
 };
 
-const baseRenderLeaf = (props: RenderLeafProps, modifiers: ModifiersStore) => {
+interface ExtendedRenderLeafProps extends RenderLeafProps {
+  leaf: RenderLeafProps['leaf'] & { className?: string };
+}
+
+const baseRenderLeaf = (props: ExtendedRenderLeafProps, modifiers: ModifiersStore) => {
   // Recursively wrap the children for each active modifier
   const wrappedChildren = getEntries(modifiers).reduce((currentChildren, modifierEntry) => {
     const [name, modifier] = modifierEntry;
@@ -299,7 +306,11 @@ const baseRenderLeaf = (props: RenderLeafProps, modifiers: ModifiersStore) => {
     return currentChildren;
   }, props.children);
 
-  return <span {...props.attributes}>{wrappedChildren}</span>;
+  return (
+    <span {...props.attributes} className={props.leaf.className}>
+      {wrappedChildren}
+    </span>
+  );
 };
 
 type BaseRenderElementProps = Direction & {
@@ -343,6 +354,8 @@ const baseRenderElement = ({
   );
 };
 
+const dragNoop = () => true;
+
 interface BlocksContentProps {
   placeholder?: string;
   ariaLabelId: string;
@@ -358,7 +371,7 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
 
   // Create renderLeaf function based on the modifiers store
   const renderLeaf = React.useCallback(
-    (props: RenderLeafProps) => baseRenderLeaf(props, modifiers),
+    (props: ExtendedRenderLeafProps) => baseRenderLeaf(props, modifiers),
     [modifiers]
   );
 
@@ -535,9 +548,7 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
       case 'Escape':
         return ReactEditor.blur(editor);
     }
-
     handleKeyboardShortcuts(event);
-
     // Check if a snippet was triggered
     if (event.key === ' ') {
       checkSnippet(event);
@@ -550,27 +561,26 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
    *  We are overriding it to check if the selection is not fully within the visible area of the editor,
    *  we use scrollBy one line to the bottom
    */
-  const handleScrollSelectionIntoView = () => {
-    if (!editor.selection) return;
-    const domRange = ReactEditor.toDOMRange(editor, editor.selection);
-    const domRect = domRange.getBoundingClientRect();
-    const blocksInput = blocksRef.current;
 
-    if (!blocksInput) {
+  const handleScrollSelectionIntoView = React.useCallback(() => {
+    if (!editor.selection || !blocksRef.current) {
       return;
     }
 
-    const editorRect = blocksInput.getBoundingClientRect();
+    const domRange = ReactEditor.toDOMRange(editor, editor.selection);
+    const domRect = domRange.getBoundingClientRect();
+
+    const editorRect = blocksRef.current.getBoundingClientRect();
 
     // Check if the selection is not fully within the visible area of the editor
     if (domRect.top < editorRect.top || domRect.bottom > editorRect.bottom) {
       // Scroll by one line to the bottom
-      blocksInput.scrollBy({
+      blocksRef.current.scrollBy({
         top: 28, // 20px is the line-height + 8px line gap
         behavior: 'smooth',
       });
     }
-  };
+  }, [editor]);
 
   return (
     <Box
@@ -582,7 +592,7 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
       background="neutral0"
       color="neutral800"
       lineHeight={6}
-      paddingRight={4}
+      paddingRight={7}
       paddingTop={6}
       paddingBottom={3}
     >
@@ -591,17 +601,14 @@ const BlocksContent = ({ placeholder, ariaLabelId }: BlocksContentProps) => {
         readOnly={disabled}
         placeholder={placeholder}
         isExpandedMode={isExpandedMode}
+        decorate={decorateCode}
         renderElement={renderElement}
         renderLeaf={renderLeaf}
         onKeyDown={handleKeyDown}
         scrollSelectionIntoView={handleScrollSelectionIntoView}
         // As we have our own handler to drag and drop the elements returing true will skip slate's own event handler
-        onDrop={() => {
-          return true;
-        }}
-        onDragStart={() => {
-          return true;
-        }}
+        onDrop={dragNoop}
+        onDragStart={dragNoop}
       />
       {modalElement}
     </Box>
